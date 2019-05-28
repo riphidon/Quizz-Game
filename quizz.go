@@ -19,7 +19,7 @@ func main() {
 	r := csv.NewReader(bufio.NewReader(q))
 
 	for {
-		records, err := r.Read()
+		record, err := r.Read()
 		if err == io.EOF {
 			if count > 10 {
 				fmt.Println("You Won !!!")
@@ -31,13 +31,13 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("What %v is equal to?\n", records[0])
+		fmt.Printf("What %v is equal to?\n", record[0])
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			res = scanner.Text()
 		}
-		if res != records[1] {
-			fmt.Printf("Wrong Answer!! %v equals %s\n", records[0], records[1])
+		if res != record[1] {
+			fmt.Printf("Wrong Answer!! %v equals %s\n", record[0], record[1])
 		} else {
 			count++
 		}
