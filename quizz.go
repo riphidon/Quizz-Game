@@ -12,19 +12,16 @@ import (
 func main() {
 	var res string
 	var count int
-	q, err := os.Open("quizz.csv")
-	if err != nil {
-		log.Fatal(err)
-	}
-	r := csv.NewReader(bufio.NewReader(q))
-
+	var total = getNbQuestions()
+	var file = readFile()
+	fmt.Println(total)
 	for {
-		record, err := r.Read()
+		record, err := file.Read()
 		if err == io.EOF {
 			if count > 10 {
-				fmt.Println("You Won !!!")
+				fmt.Printf("You scored %v out of %v, good job\n", count, total)
 			} else {
-				fmt.Println("Try again looser")
+				fmt.Printf("You scored %v out of %v, try again\n", count, total)
 			}
 			break
 		}
@@ -44,4 +41,22 @@ func main() {
 
 	}
 
+}
+
+func readFile() csv.Reader {
+	q, err := os.Open("quizz.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	r := csv.NewReader(bufio.NewReader(q))
+	return *r
+}
+
+func getNbQuestions() int {
+	var file = readFile()
+	questions, err := file.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return len(questions)
 }
