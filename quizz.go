@@ -7,59 +7,68 @@ import (
 	"io"
 	"log"
 	"os"
+	"sync"
 	"time"
 )
 
 func main() {
-	var s bool
-	var stop bool
 	var res string
 	var count int
+	var wg = sync.WaitGroup{}
 	var total = getNbQuestions()
 	var file = readFile()
+
+	ch := make(chan string, total)
+	wg.Add(2)
 
 	fmt.Println("Press start")
 	gameStart := bufio.NewScanner(os.Stdin)
 	if gameStart.Scan() {
-		s = true
-	}
-	if s != false {
 		timer := time.AfterFunc(10*time.Second, func() {
-			stop = true
 			fmt.Println("\nTime is over")
+			ch <- fmt.Sprintf("You scored %v out of %v\n", count, total)
+			close(ch)
 		})
-		defer timer.Stop()
-		for {
+		go func(ch <-chan string) {
 
-			record, err := file.Read()
-			if stop == true || err == io.EOF {
-				if count > 10 {
-					fmt.Printf("You scored %v out of %v, good job\n", count, total)
+			for {
+				if i, ok := <-ch; ok {
+					fmt.Println(i)
 				} else {
-					fmt.Printf("You scored %v out of %v, try again\n", count, total)
+					break
 				}
-				break
 			}
-			if err != nil {
-				log.Fatal(err)
-			}
+			wg.Done()
+		}(ch)
 
-			if stop == false {
+		go func(ch chan<- string) {
+
+			defer timer.Stop()
+			for {
+				record, err := file.Read()
+				if err == io.EOF {
+					ch <- fmt.Sprintf("You scored %v out of %v\n", count, total)
+					break
+				}
+				if err != nil {
+					log.Fatal(err)
+				}
 				fmt.Printf("What %v is equal to?\n", record[0])
 				scanner := bufio.NewScanner(os.Stdin)
 				if scanner.Scan() {
 					res = scanner.Text()
 					if res != record[1] {
-						fmt.Printf("Wrong Answer!! %v equals %s\n", record[0], record[1])
+						ch <- fmt.Sprintf("Wrong Answer!! %v equals %s\n", record[0], record[1])
 					} else {
-						fmt.Printf("Correct %v equals %s\n", record[0], record[1])
+						ch <- fmt.Sprintf("Correct %v equals %s\n", record[0], record[1])
 						count++
 					}
 				}
 			}
 
-		}
-
+			wg.Done()
+		}(ch)
+		wg.Wait()
 	}
 
 }
